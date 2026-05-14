@@ -19,6 +19,7 @@ let emojiMap = {};
 async function init() {
   const res = await chrome.runtime.sendMessage({ type: 'GET_CACHED_EMOJIS' });
   emojiMap = res.emojis || {};
+  maybeRenderEmojis();
   watchForChatInput();
 }
 
@@ -265,11 +266,13 @@ function findChatPanel() {
     document.querySelector('[aria-label*="Chat with everyone"]') ||
     document.querySelector('[aria-label="Chat"]') ||
     document.querySelector('[data-panel-type="chat"]') ||
-    // Fallback: any scrollable aside that contains a chat input sibling.
+    document.querySelector('[jsname="xySENc"]') ||
+    document.querySelector('[data-allocation-index]') ||
     (() => {
       const input = findChatInput();
-      return input ? input.closest('[role="complementary"]') : null;
-    })()
+      return input ? input.closest('[role="complementary"]') ?? input.closest('aside') ?? document.body : null;
+    })() ||
+    document.body
   );
 }
 
