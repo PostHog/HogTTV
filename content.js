@@ -303,7 +303,7 @@ function expandEmojiShortcodes(textNode) {
     lastIndex = match.index + match[0].length;
   }
 
-  if (fragments.length < 2) return;
+  if (fragments.length === 0) return;
   if (lastIndex < text.length) {
     fragments.push(document.createTextNode(text.slice(lastIndex)));
   }
