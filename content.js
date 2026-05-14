@@ -3,7 +3,6 @@
 
 const BTN_ID = 'slack-emoji-picker-btn';
 const PICKER_ID = 'slack-emoji-picker';
-const PROCESSED_ATTR = 'data-slack-emoji-rendered';
 
 // Google Meet changes its DOM frequently; try multiple selectors.
 const INPUT_SELECTORS = [
@@ -245,9 +244,8 @@ function maybeRenderEmojis() {
   // Walk all text nodes that contain a colon (fast pre-filter).
   const walker = document.createTreeWalker(panel, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
-      // Skip our own picker and already-processed parents.
+      // Skip our own picker.
       if (node.parentElement.closest(`#${PICKER_ID}`)) return NodeFilter.FILTER_REJECT;
-      if (node.parentElement.closest(`[${PROCESSED_ATTR}]`)) return NodeFilter.FILTER_REJECT;
       if (/:[\w-]+:/.test(node.textContent)) return NodeFilter.FILTER_ACCEPT;
       return NodeFilter.FILTER_REJECT;
     },
@@ -311,8 +309,6 @@ function expandEmojiShortcodes(textNode) {
   }
 
   const parent = textNode.parentElement;
-  // Mark the parent so the MutationObserver doesn't reprocess it.
-  parent.setAttribute(PROCESSED_ATTR, '');
   for (const frag of fragments) parent.insertBefore(frag, textNode);
   parent.removeChild(textNode);
 }
