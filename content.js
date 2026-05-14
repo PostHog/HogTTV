@@ -13,7 +13,7 @@ const INPUT_SELECTORS = [
   'textarea[data-is-composing]',
 ];
 
-let emojiMap = {};
+var emojiMap = {};
 
 async function init() {
   const res = await chrome.runtime.sendMessage({ type: 'GET_CACHED_EMOJIS' });
