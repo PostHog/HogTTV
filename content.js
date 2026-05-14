@@ -29,7 +29,7 @@ function watchForChatInput() {
     maybeInjectButton();
     maybeRenderEmojis();
   });
-  observer.observe(document.body, { childList: true, subtree: true });
+  observer.observe(document.body, { childList: true, subtree: true, attributes: true });
   // Run once immediately in case chat is already open.
   maybeInjectButton();
 }
