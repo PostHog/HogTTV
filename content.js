@@ -161,8 +161,8 @@ function showPicker(input, anchor) {
       return;
     }
 
-    // Render up to 300 results to avoid DOM bloat.
-    for (const [name, url] of entries.slice(0, 300)) {
+    // Render up to 150 results to avoid DOM bloat.
+    for (const [name, url] of entries.slice(0, 150)) {
       const cell = document.createElement('button');
       cell.title = `:${name}:`;
       Object.assign(cell.style, {
