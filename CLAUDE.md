@@ -8,18 +8,18 @@ A Chrome extension that renders custom Slack emojis in Google Meet chat. It's al
 
 Hoggit wraps git with agent intent capture. Always use it for commits in this repo.
 
-**Binary:** `./hoggit-aarch64-apple-darwin/hoggit`
+**Binary:** `hoggit` (system-installed at `~/.cargo/bin/hoggit`)
 
 ### Workflow for every commit
 
 1. Write the intent to a temp file first
-2. Capture it: `./hoggit-aarch64-apple-darwin/hoggit intent capture -f /tmp/intent.txt -m claude-sonnet-4-6`
+2. Capture it: `hoggit intent capture -f /tmp/intent.txt -m claude-sonnet-4-6`
 3. Stage files
-4. Commit: `./hoggit-aarch64-apple-darwin/hoggit commit -m "human-readable message"`
+4. Commit: `hoggit commit -m "human-readable message"`
 
 If hoggit reports "no pending intents to bind" after the commit, bind directly:
 ```
-./hoggit-aarch64-apple-darwin/hoggit intent capture -f /tmp/intent.txt -m claude-sonnet-4-6 --commit HEAD
+hoggit intent capture -f /tmp/intent.txt -m claude-sonnet-4-6 --commit HEAD
 ```
 
 ### What goes in an intent

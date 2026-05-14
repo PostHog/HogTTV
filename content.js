@@ -51,7 +51,7 @@ function maybeInjectButton() {
 
   const btn = document.createElement('button');
   btn.id = BTN_ID;
-  btn.title = 'Slack custom emojis';
+  btn.title = 'Insert a custom Slack emoji';
   btn.textContent = '🏷';
   Object.assign(btn.style, {
     background: 'none',
