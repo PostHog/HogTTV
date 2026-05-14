@@ -263,11 +263,10 @@ function maybeRenderEmojis() {
 
 function findChatPanel() {
   return (
-    document.querySelector('[aria-label*="Chat with everyone"]') ||
-    document.querySelector('[aria-label="Chat"]') ||
-    document.querySelector('[data-panel-type="chat"]') ||
     document.querySelector('[jsname="xySENc"]') ||
-    document.querySelector('[data-allocation-index]') ||
+    document.querySelector('[data-panel-type="chat"]') ||
+    document.querySelector(':not(button)[aria-label*="Chat with everyone"]') ||
+    document.querySelector('[aria-label="Chat"]:not(button)') ||
     (() => {
       const input = findChatInput();
       return input ? input.closest('[role="complementary"]') ?? input.closest('aside') ?? document.body : null;
