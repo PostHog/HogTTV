@@ -2,6 +2,8 @@
 
 Use your custom Slack emotes in Google Meet.
 
+<img width="1411" height="708" alt="image" src="https://github.com/user-attachments/assets/c0d23721-99e8-4260-85e6-8042ae1693d1" />
+
 ## What it does
 
 - Adds a 🏷 picker button next to the Google Meet chat input
