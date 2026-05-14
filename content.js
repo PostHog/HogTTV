@@ -3,6 +3,7 @@
 
 const BTN_ID = 'slack-emoji-picker-btn';
 const PICKER_ID = 'slack-emoji-picker';
+const AUTOCOMPLETE_ID = 'slack-emoji-autocomplete';
 const PROCESSED_ATTR = 'data-slack-emoji-rendered';
 
 // Google Meet changes its DOM frequently; try multiple selectors.
@@ -26,13 +27,15 @@ async function init() {
 // ── DOM observation ──────────────────────────────────────────────────────────
 
 function watchForChatInput() {
-  const observer = new MutationObserver(() => {
+  const sweep = () => {
     maybeInjectButton();
     maybeRenderEmojis();
-  });
+    maybeAttachAutocomplete();
+  };
+  const observer = new MutationObserver(sweep);
   observer.observe(document.body, { childList: true, subtree: true });
   // Run once immediately in case chat is already open.
-  maybeInjectButton();
+  sweep();
 }
 
 function findChatInput() {
@@ -245,8 +248,9 @@ function maybeRenderEmojis() {
   // Walk all text nodes that contain a colon (fast pre-filter).
   const walker = document.createTreeWalker(panel, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
-      // Skip our own picker and already-processed parents.
+      // Skip our own picker, autocomplete dropdown, and already-processed parents.
       if (node.parentElement.closest(`#${PICKER_ID}`)) return NodeFilter.FILTER_REJECT;
+      if (node.parentElement.closest(`#${AUTOCOMPLETE_ID}`)) return NodeFilter.FILTER_REJECT;
       if (node.parentElement.closest(`[${PROCESSED_ATTR}]`)) return NodeFilter.FILTER_REJECT;
       if (/:[\w-]+:/.test(node.textContent)) return NodeFilter.FILTER_ACCEPT;
       return NodeFilter.FILTER_REJECT;
@@ -266,6 +270,7 @@ function findChatPanel() {
     document.querySelector('[aria-label*="Chat with everyone"]') ||
     document.querySelector('[aria-label="Chat"]') ||
     document.querySelector('[data-panel-type="chat"]') ||
+    document.querySelector('[data-meet-compact-chat]') ||
     document.querySelector('[jsname="xySENc"]') ||
     document.querySelector('[data-allocation-index]') ||
     (() => {
@@ -316,6 +321,186 @@ function expandEmojiShortcodes(textNode) {
   parent.setAttribute(PROCESSED_ATTR, '');
   for (const frag of fragments) parent.insertBefore(frag, textNode);
   parent.removeChild(textNode);
+}
+
+// ── Inline `:emoji_name:` autocomplete in the Meet chat input ────────────────
+
+const AC_ATTACHED_ATTR = 'data-slack-autocomplete-attached';
+
+function maybeAttachAutocomplete() {
+  const input = findChatInput();
+  if (!input) return;
+  if (input.getAttribute(AC_ATTACHED_ATTR)) return;
+  input.setAttribute(AC_ATTACHED_ATTR, '1');
+  input.addEventListener('input', () => onAutocompleteInput(input));
+  input.addEventListener('keydown', (e) => onAutocompleteKey(e, input));
+  input.addEventListener('blur', () => setTimeout(hideAutocomplete, 100));
+}
+
+// Returns { query, start } where `start` is the index of the leading ':' in the
+// shortcode the caret is currently inside. Null if the caret isn't on a candidate.
+function getActiveShortcode(input) {
+  const text = input.tagName === 'TEXTAREA' || input.tagName === 'INPUT'
+    ? input.value
+    : (input.textContent || '');
+  const caret = input.selectionStart ?? text.length;
+  const before = text.slice(0, caret);
+  const m = before.match(/(^|[\s(])(:([a-z0-9_-]{1,32}))$/i);
+  if (!m) return null;
+  return { query: m[3].toLowerCase(), start: caret - m[2].length };
+}
+
+function matchEmojis(query, limit) {
+  const prefixHits = [];
+  const substringHits = [];
+  for (const [name, url] of Object.entries(emojiMap)) {
+    if (name.startsWith(query)) prefixHits.push({ name, url });
+    else if (name.includes(query)) substringHits.push({ name, url });
+    if (prefixHits.length + substringHits.length >= limit * 4) break;
+  }
+  prefixHits.sort((a, b) => a.name.length - b.name.length || a.name.localeCompare(b.name));
+  substringHits.sort((a, b) => a.name.localeCompare(b.name));
+  return [...prefixHits, ...substringHits].slice(0, limit);
+}
+
+function onAutocompleteInput(input) {
+  const active = getActiveShortcode(input);
+  if (!active || Object.keys(emojiMap).length === 0) {
+    hideAutocomplete();
+    return;
+  }
+  const matches = matchEmojis(active.query, 8);
+  if (matches.length === 0) {
+    hideAutocomplete();
+    return;
+  }
+  renderAutocomplete(input, matches, active);
+}
+
+function renderAutocomplete(input, matches, active) {
+  hideAutocomplete();
+  const box = document.createElement('div');
+  box.id = AUTOCOMPLETE_ID;
+
+  const rect = input.getBoundingClientRect();
+  Object.assign(box.style, {
+    position: 'fixed',
+    left: `${rect.left}px`,
+    bottom: `${window.innerHeight - rect.top + 4}px`,
+    minWidth: '220px',
+    maxWidth: '320px',
+    background: '#1a1d21',
+    border: '1px solid #4a4f5b',
+    borderRadius: '8px',
+    padding: '4px',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.55)',
+    zIndex: '2147483646',
+    fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',
+    fontSize: '13px',
+  });
+
+  matches.forEach((m, i) => {
+    const row = document.createElement('div');
+    row.dataset.name = m.name;
+    row.dataset.start = String(active.start);
+    row.dataset.active = i === 0 ? '1' : '0';
+    Object.assign(row.style, {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      padding: '4px 8px',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      color: '#d1d2d3',
+      background: i === 0 ? '#36383d' : 'transparent',
+    });
+    const img = document.createElement('img');
+    img.src = m.url;
+    img.alt = `:${m.name}:`;
+    Object.assign(img.style, {
+      width: '20px',
+      height: '20px',
+      objectFit: 'contain',
+      flexShrink: '0',
+    });
+    const label = document.createElement('span');
+    label.textContent = `:${m.name}:`;
+    row.appendChild(img);
+    row.appendChild(label);
+    row.addEventListener('mouseenter', () => highlightRow(row));
+    row.addEventListener('mousedown', (e) => {
+      // mousedown so we beat the input's blur handler.
+      e.preventDefault();
+      commitAutocomplete(input, m.name, active.start);
+    });
+    box.appendChild(row);
+  });
+
+  document.body.appendChild(box);
+}
+
+function highlightRow(target) {
+  const box = document.getElementById(AUTOCOMPLETE_ID);
+  if (!box) return;
+  for (const row of box.children) {
+    const isActive = row === target;
+    row.dataset.active = isActive ? '1' : '0';
+    row.style.background = isActive ? '#36383d' : 'transparent';
+  }
+}
+
+function hideAutocomplete() {
+  document.getElementById(AUTOCOMPLETE_ID)?.remove();
+}
+
+function onAutocompleteKey(e, input) {
+  const box = document.getElementById(AUTOCOMPLETE_ID);
+  if (!box) return;
+  const rows = [...box.children];
+  if (rows.length === 0) return;
+  const activeIdx = Math.max(0, rows.findIndex((r) => r.dataset.active === '1'));
+
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    const delta = e.key === 'ArrowDown' ? 1 : -1;
+    highlightRow(rows[(activeIdx + delta + rows.length) % rows.length]);
+  } else if (e.key === 'Tab' || e.key === 'Enter') {
+    e.preventDefault();
+    const row = rows[activeIdx];
+    commitAutocomplete(input, row.dataset.name, Number(row.dataset.start));
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    hideAutocomplete();
+  }
+}
+
+function commitAutocomplete(input, name, start) {
+  const insertion = `:${name}: `;
+  if (input.tagName === 'TEXTAREA' || input.tagName === 'INPUT') {
+    const caret = input.selectionStart ?? input.value.length;
+    const before = input.value.slice(0, start);
+    const after = input.value.slice(caret);
+    input.value = before + insertion + after;
+    input.selectionStart = input.selectionEnd = before.length + insertion.length;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  } else if (input.isContentEditable) {
+    // For contenteditable inputs, replace the in-progress shortcode by
+    // selecting backwards from the caret over its length, then inserting.
+    const active = getActiveShortcode(input);
+    if (active) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        for (let i = 0; i < (input.selectionStart ?? 0) - start; i++) {
+          selection.modify('extend', 'backward', 'character');
+        }
+        range.deleteContents();
+      }
+    }
+    document.execCommand('insertText', false, insertion);
+  }
+  hideAutocomplete();
+  input.focus();
 }
 
 init();
