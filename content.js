@@ -163,7 +163,10 @@ function showPicker(input, anchor) {
     flex: '1',
   });
 
+  let cellObserver = null;
+
   function renderGrid(filter) {
+    if (cellObserver) { cellObserver.disconnect(); cellObserver = null; }
     grid.innerHTML = '';
     const entries = Object.entries(emojiMap).filter(
       ([name]) => !filter || name.includes(filter.toLowerCase())
@@ -186,9 +189,33 @@ function showPicker(input, anchor) {
       return;
     }
 
-    // Render up to 150 results to avoid DOM bloat.
-    for (const [name, url] of entries.slice(0, 150)) {
+    // Render placeholder cells immediately so the grid has the correct scroll
+    // height, then fill in images as cells enter the viewport.
+    cellObserver = new IntersectionObserver((observations) => {
+      for (const obs of observations) {
+        if (!obs.isIntersecting || obs.target.dataset.rendered) continue;
+        obs.target.dataset.rendered = '1';
+        cellObserver.unobserve(obs.target);
+        const name = obs.target.dataset.emojiName;
+        const img = document.createElement('img');
+        img.src = emojiMap[name];
+        img.alt = `:${name}:`;
+        img.loading = 'lazy';
+        Object.assign(img.style, { width: '26px', height: '26px', objectFit: 'contain', display: 'block' });
+        obs.target.appendChild(img);
+        obs.target.addEventListener('mouseenter', () => (obs.target.style.background = '#4a4f5b'));
+        obs.target.addEventListener('mouseleave', () => (obs.target.style.background = 'none'));
+        obs.target.addEventListener('click', () => {
+          insertIntoInput(input, `:${name}: `);
+          picker.remove();
+          input.focus();
+        });
+      }
+    }, { root: grid, rootMargin: '200px 0px' });
+
+    for (const [name] of entries) {
       const cell = document.createElement('button');
+      cell.dataset.emojiName = name;
       cell.title = `:${name}:`;
       Object.assign(cell.style, {
         background: 'none',
@@ -199,27 +226,11 @@ function showPicker(input, anchor) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        width: '34px',
+        height: '34px',
+        flexShrink: '0',
       });
-      cell.addEventListener('mouseenter', () => (cell.style.background = '#4a4f5b'));
-      cell.addEventListener('mouseleave', () => (cell.style.background = 'none'));
-
-      const img = document.createElement('img');
-      img.src = url;
-      img.alt = `:${name}:`;
-      img.loading = 'lazy';
-      Object.assign(img.style, {
-        width: '26px',
-        height: '26px',
-        objectFit: 'contain',
-        display: 'block',
-      });
-
-      cell.appendChild(img);
-      cell.addEventListener('click', () => {
-        insertIntoInput(input, `:${name}: `);
-        picker.remove();
-        input.focus();
-      });
+      cellObserver.observe(cell);
       grid.appendChild(cell);
     }
   }
@@ -265,7 +276,7 @@ function getPartialShortcode(input) {
     pre.setEnd(range.startContainer, range.startOffset);
     textBefore = pre.toString();
   }
-  const match = textBefore.match(/:([a-z0-9_-]{2,})$/);
+  const match = textBefore.match(/:([a-z0-9_-]{1,})$/);
   if (!match) return null;
   return { partial: match[1], colonIndex: textBefore.length - match[0].length };
 }
