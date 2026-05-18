@@ -1,5 +1,5 @@
-const CLIENT_ID = 'YOUR_SLACK_CLIENT_ID';
-const SERVER_CALLBACK = 'https://hogtv-emojis.vercel.app/api/oauth/callback';
+const CLIENT_ID = '910200304849.11123754217221';
+const SERVER_CALLBACK = 'https://hogttv-server.vercel.app/api/oauth/callback';
 
 const connectBtn = document.getElementById('connectBtn');
 const syncBtn = document.getElementById('syncBtn');
