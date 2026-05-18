@@ -1,21 +1,22 @@
 /* Scoped to our injected elements only — no global Meet overrides. */
 
 #slack-emoji-picker-btn {
-  /* Ensure the button doesn't inherit Meet's button reset styles */
   all: unset;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-size: 18px;
-  padding: 4px 6px;
-  border-radius: 4px;
-  opacity: 0.65;
-  line-height: 1;
-  vertical-align: middle;
+  padding: 8px;
+  border-radius: 50%;
+  opacity: 0.7;
   flex-shrink: 0;
-  transition: opacity 0.1s;
+  transition: opacity 0.1s, background 0.1s;
+  color: inherit;
 }
 
 #slack-emoji-picker-btn:hover {
   opacity: 1;
+  background: rgba(128, 128, 128, 0.15);
 }
 
 #slack-emoji-picker input:focus {

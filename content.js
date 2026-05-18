@@ -44,6 +44,18 @@ function findChatInput() {
 
 // ── Button injection ─────────────────────────────────────────────────────────
 
+function findSendButton(input) {
+  const labels = ['Send message', 'Send a message', 'Send'];
+  let el = input.parentElement;
+  for (let i = 0; i < 6 && el; i++, el = el.parentElement) {
+    for (const label of labels) {
+      const btn = el.querySelector(`button[aria-label="${label}"]`);
+      if (btn) return btn;
+    }
+  }
+  return null;
+}
+
 function maybeInjectButton() {
   if (document.getElementById(BTN_ID)) return;
   const input = findChatInput();
@@ -52,28 +64,34 @@ function maybeInjectButton() {
   const btn = document.createElement('button');
   btn.id = BTN_ID;
   btn.title = 'Insert a custom Slack emoji';
-  btn.textContent = '🏷';
+  btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="9" r="0.5" fill="currentColor"/><circle cx="15" cy="9" r="0.5" fill="currentColor"/></svg>`;
   Object.assign(btn.style, {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    fontSize: '18px',
-    padding: '4px 6px',
-    borderRadius: '4px',
-    opacity: '0.65',
-    lineHeight: '1',
-    verticalAlign: 'middle',
+    padding: '8px',
+    borderRadius: '50%',
+    color: 'inherit',
     flexShrink: '0',
+    opacity: '0.7',
   });
   btn.addEventListener('mouseenter', () => (btn.style.opacity = '1'));
-  btn.addEventListener('mouseleave', () => (btn.style.opacity = '0.65'));
+  btn.addEventListener('mouseleave', () => (btn.style.opacity = '0.7'));
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     togglePicker(input, btn);
   });
 
-  // Insert immediately after the input inside its parent flex row.
-  input.parentElement.insertBefore(btn, input.nextSibling);
+  // Insert just before the send button so it sits inline in Meet's toolbar.
+  const sendBtn = findSendButton(input);
+  if (sendBtn) {
+    sendBtn.parentElement.insertBefore(btn, sendBtn);
+  } else {
+    input.parentElement.insertBefore(btn, input.nextSibling);
+  }
 }
 
 // ── Picker overlay ───────────────────────────────────────────────────────────
