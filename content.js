@@ -3,6 +3,8 @@
 
 const BTN_ID = 'slack-emoji-picker-btn';
 const PICKER_ID = 'slack-emoji-picker';
+const AUTOCOMPLETE_ID = 'slack-emoji-autocomplete';
+const AUTOCOMPLETE_MAX = 6;
 
 // Google Meet changes its DOM frequently; try multiple selectors.
 const INPUT_SELECTORS = [
@@ -91,6 +93,11 @@ function maybeInjectButton() {
     sendBtn.parentElement.insertBefore(btn, sendBtn);
   } else {
     input.parentElement.insertBefore(btn, input.nextSibling);
+  }
+
+  if (!input.dataset.hoggtvAutocomplete) {
+    input.dataset.hoggtvAutocomplete = '1';
+    attachAutocomplete(input);
   }
 }
 
@@ -236,7 +243,173 @@ function showPicker(input, anchor) {
   setTimeout(() => document.addEventListener('click', onOutsideClick, true), 0);
 }
 
-// ── Inserting emoji text into Meet's chat input ──────────────────────────────
+// ── Inline autocomplete ──────────────────────────────────────────────────────
+
+function attachAutocomplete(input) {
+  input.addEventListener('input', () => handleAutocompleteInput(input));
+  // Capture phase so we intercept Enter before Meet's send handler.
+  input.addEventListener('keydown', (e) => handleAutocompleteKeydown(e, input), true);
+  input.addEventListener('blur', () => setTimeout(hideAutocomplete, 150));
+}
+
+function getPartialShortcode(input) {
+  let textBefore;
+  if (input.tagName === 'TEXTAREA' || input.tagName === 'INPUT') {
+    textBefore = input.value.slice(0, input.selectionStart);
+  } else {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return null;
+    const range = sel.getRangeAt(0).cloneRange();
+    const pre = range.cloneRange();
+    pre.selectNodeContents(input);
+    pre.setEnd(range.startContainer, range.startOffset);
+    textBefore = pre.toString();
+  }
+  const match = textBefore.match(/:([a-z0-9_-]{2,})$/);
+  if (!match) return null;
+  return { partial: match[1], colonIndex: textBefore.length - match[0].length };
+}
+
+function handleAutocompleteInput(input) {
+  const result = getPartialShortcode(input);
+  if (!result) { hideAutocomplete(); return; }
+
+  const matches = Object.keys(emojiMap)
+    .filter(name => name.startsWith(result.partial))
+    .slice(0, AUTOCOMPLETE_MAX);
+
+  if (matches.length === 0) { hideAutocomplete(); return; }
+  showAutocomplete(input, result.partial, matches);
+}
+
+function handleAutocompleteKeydown(e, input) {
+  const ac = document.getElementById(AUTOCOMPLETE_ID);
+  if (!ac) return;
+
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    e.stopPropagation();
+    hideAutocomplete();
+    return;
+  }
+
+  const items = ac.querySelectorAll('[data-emoji-name]');
+  const activeIdx = Array.from(items).findIndex(el => el.dataset.active === '1');
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveItem(items, activeIdx < items.length - 1 ? activeIdx + 1 : 0);
+    return;
+  }
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveItem(items, activeIdx > 0 ? activeIdx - 1 : items.length - 1);
+    return;
+  }
+  if (e.key === 'Enter' || e.key === 'Tab') {
+    const active = ac.querySelector('[data-active="1"]');
+    if (!active) return;
+    e.preventDefault();
+    e.stopPropagation();
+    completeShortcode(input, active.dataset.emojiName);
+  }
+}
+
+function setActiveItem(items, idx) {
+  items.forEach((el, i) => {
+    el.dataset.active = i === idx ? '1' : '0';
+    el.style.background = i === idx ? '#4a4f5b' : 'none';
+  });
+}
+
+function showAutocomplete(input, partial, matches) {
+  hideAutocomplete();
+  const ac = document.createElement('div');
+  ac.id = AUTOCOMPLETE_ID;
+  const rect = input.getBoundingClientRect();
+  Object.assign(ac.style, {
+    position: 'fixed',
+    bottom: `${window.innerHeight - rect.top + 4}px`,
+    left: `${rect.left}px`,
+    background: '#1a1d21',
+    border: '1px solid #4a4f5b',
+    borderRadius: '8px',
+    padding: '4px',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+    zIndex: '2147483647',
+    fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',
+    minWidth: '220px',
+  });
+
+  matches.forEach((name, i) => {
+    const item = document.createElement('div');
+    item.dataset.emojiName = name;
+    item.dataset.active = i === 0 ? '1' : '0';
+    Object.assign(item.style, {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      padding: '5px 8px',
+      borderRadius: '5px',
+      cursor: 'pointer',
+      color: '#d1d2d3',
+      fontSize: '13px',
+      background: i === 0 ? '#4a4f5b' : 'none',
+    });
+
+    const img = document.createElement('img');
+    img.src = emojiMap[name];
+    img.alt = `:${name}:`;
+    img.loading = 'lazy';
+    Object.assign(img.style, { width: '20px', height: '20px', objectFit: 'contain', flexShrink: '0' });
+
+    const label = document.createElement('span');
+    label.textContent = `:${name}:`;
+
+    item.appendChild(img);
+    item.appendChild(label);
+    item.addEventListener('mouseenter', () => setActiveItem(ac.querySelectorAll('[data-emoji-name]'), i));
+    item.addEventListener('mousedown', (e) => { e.preventDefault(); completeShortcode(input, name); });
+    ac.appendChild(item);
+  });
+
+  document.body.appendChild(ac);
+}
+
+function hideAutocomplete() {
+  document.getElementById(AUTOCOMPLETE_ID)?.remove();
+}
+
+function completeShortcode(input, name) {
+  const result = getPartialShortcode(input);
+  if (!result) { hideAutocomplete(); return; }
+
+  const completion = `:${name}: `;
+  const replaceLen = result.partial.length + 1; // +1 for the leading ':'
+
+  if (input.tagName === 'TEXTAREA' || input.tagName === 'INPUT') {
+    const before = input.value.slice(0, result.colonIndex);
+    const after = input.value.slice(result.colonIndex + replaceLen);
+    input.value = before + completion + after;
+    input.selectionStart = input.selectionEnd = result.colonIndex + completion.length;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  } else {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) { hideAutocomplete(); return; }
+    const range = sel.getRangeAt(0);
+    range.setStart(range.startContainer, range.startOffset - replaceLen);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    document.execCommand('insertText', false, completion);
+  }
+
+  hideAutocomplete();
+  input.focus();
+}
+
+
 
 function insertIntoInput(el, text) {
   el.focus();

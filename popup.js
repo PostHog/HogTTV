@@ -52,7 +52,7 @@ connectBtn.addEventListener('click', async () => {
 
     if (error) {
       const msg = error === 'wrong_workspace'
-        ? 'This extension is only available to the PostHog Slack workspace.'
+        ? 'This workspace is not authorized.'
         : `Slack error: ${error}`;
       showStatus(msg, 'error');
       return;
