@@ -3,10 +3,12 @@
   "name": "Slack Emojis for Google Meet",
   "version": "1.0.0",
   "description": "Use your Slack workspace's custom emojis in Google Meet chat",
-  "permissions": ["storage"],
+  "permissions": ["storage", "identity"],
   "host_permissions": [
     "https://meet.google.com/*",
-    "https://slack.com/api/*"
+    "https://slack.com/api/*",
+    "https://slack.com/oauth/*",
+    "https://hogtv-emojis.vercel.app/*"
   ],
   "background": {
     "service_worker": "background.js"

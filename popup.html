@@ -31,45 +31,70 @@
       margin-bottom: 16px;
     }
 
-    label {
-      display: block;
-      font-weight: 500;
-      color: #c9cacb;
-      margin-bottom: 5px;
+    /* ── Disconnected view ─────────────────────────────────────── */
+
+    #disconnectedView {
+      display: none;
     }
 
-    input[type="password"],
-    input[type="text"] {
+    #connectBtn {
       width: 100%;
-      padding: 7px 10px;
-      background: #222529;
-      border: 1px solid #4a4f5b;
+      padding: 10px 12px;
+      background: #4a154b;
+      color: #fff;
+      border: none;
       border-radius: 6px;
-      color: #d1d2d3;
       font-size: 13px;
-      outline: none;
-      margin-bottom: 6px;
-      transition: border-color 0.15s;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity 0.15s;
     }
 
-    input[type="password"]:focus,
-    input[type="text"]:focus {
-      border-color: #4a90e2;
+    #connectBtn:hover:not(:disabled) { opacity: 0.85; }
+    #connectBtn:disabled { opacity: 0.5; cursor: default; }
+
+    .slack-hash {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
     }
 
-    .help {
-      font-size: 11px;
+    /* ── Connected view ────────────────────────────────────────── */
+
+    #connectedView {
+      display: none;
+    }
+
+    .workspace-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .workspace-label {
+      font-size: 12px;
       color: #9aa0ac;
-      margin-bottom: 14px;
-      line-height: 1.5;
     }
 
-    .help a {
-      color: #4a90e2;
-      text-decoration: none;
+    #workspaceName {
+      font-weight: 600;
+      color: #fff;
+      font-size: 13px;
     }
 
-    .help a:hover { text-decoration: underline; }
+    .connected-badge {
+      font-size: 11px;
+      color: #52b788;
+      background: #1e3a2f;
+      border: 1px solid #2d6a4f;
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
 
     .actions {
       display: flex;
@@ -97,14 +122,21 @@
 
     #syncBtn:hover:not(:disabled) { opacity: 0.85; }
 
-    #clearBtn {
-      background: #3d3f44;
-      color: #c9cacb;
+    #disconnectBtn {
+      background: transparent;
+      color: #9aa0ac;
+      border: 1px solid #3d3f44;
       flex: 0 0 auto;
       padding: 7px 10px;
     }
 
-    #clearBtn:hover:not(:disabled) { background: #4a4f5b; }
+    #disconnectBtn:hover:not(:disabled) {
+      background: #3b1a1a;
+      border-color: #6b2c2c;
+      color: #e07070;
+    }
+
+    /* ── Shared ────────────────────────────────────────────────── */
 
     #status {
       min-height: 36px;
@@ -148,19 +180,26 @@
   <h1>🏷 Slack Emojis for Meet</h1>
   <p class="subtitle">Bring your workspace emojis into Google Meet chat.</p>
 
-  <label for="tokenInput">Slack API token</label>
-  <input type="password" id="tokenInput" placeholder="xoxp-… or xoxb-…" autocomplete="off" />
+  <!-- Disconnected -->
+  <div id="disconnectedView">
+    <button id="connectBtn">
+      <span class="slack-hash">#</span> Connect to Slack
+    </button>
+  </div>
 
-  <p class="help">
-    Get a token from
-    <a href="https://api.slack.com/apps" target="_blank">api.slack.com/apps</a>
-    → OAuth &amp; Permissions → User Token Scopes → add
-    <code>emoji:read</code> → Install to workspace → copy the OAuth token.
-  </p>
-
-  <div class="actions">
-    <button id="syncBtn">Sync emojis</button>
-    <button id="clearBtn" title="Clear saved token and cache">Clear</button>
+  <!-- Connected -->
+  <div id="connectedView">
+    <div class="workspace-row">
+      <div>
+        <div class="workspace-label">Connected workspace</div>
+        <div id="workspaceName"></div>
+      </div>
+      <span class="connected-badge">connected</span>
+    </div>
+    <div class="actions">
+      <button id="syncBtn">Sync emojis</button>
+      <button id="disconnectBtn">Disconnect</button>
+    </div>
   </div>
 
   <div id="status"></div>
