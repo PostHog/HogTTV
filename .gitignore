@@ -1,3 +1,5 @@
 node_modules/
 .claude/
 .hoggit/
+.DS_Store
+hoggit-aarch64-apple-darwin/
