@@ -164,33 +164,22 @@ function showPicker(input, anchor) {
   });
 
   let cellObserver = null;
+  let noResultsMsg = null;
 
-  function renderGrid(filter) {
+  function buildGrid() {
     if (cellObserver) { cellObserver.disconnect(); cellObserver = null; }
     grid.innerHTML = '';
-    const entries = Object.entries(emojiMap).filter(
-      ([name]) => !filter || name.includes(filter.toLowerCase())
-    );
+    noResultsMsg = null;
 
-    if (entries.length === 0) {
+    if (Object.keys(emojiMap).length === 0) {
       const msg = document.createElement('p');
-      Object.assign(msg.style, {
-        gridColumn: '1 / -1',
-        color: '#9aa0ac',
-        fontSize: '13px',
-        textAlign: 'center',
-        margin: '16px 0',
-      });
-      msg.textContent =
-        Object.keys(emojiMap).length === 0
-          ? 'No emojis synced yet. Open the extension popup to add your Slack token.'
-          : 'No matching emojis.';
+      Object.assign(msg.style, { gridColumn: '1 / -1', color: '#9aa0ac', fontSize: '13px', textAlign: 'center', margin: '16px 0' });
+      msg.textContent = 'No emojis synced yet. Open the extension popup to add your Slack token.';
       grid.appendChild(msg);
       return;
     }
 
-    // Render placeholder cells immediately so the grid has the correct scroll
-    // height, then fill in images as cells enter the viewport.
+    // Build all cells once. Images are filled in lazily as cells enter the viewport.
     cellObserver = new IntersectionObserver((observations) => {
       for (const obs of observations) {
         if (!obs.isIntersecting || obs.target.dataset.rendered) continue;
@@ -213,30 +202,39 @@ function showPicker(input, anchor) {
       }
     }, { root: grid, rootMargin: '200px 0px' });
 
-    for (const [name] of entries) {
+    for (const [name] of Object.entries(emojiMap)) {
       const cell = document.createElement('button');
       cell.dataset.emojiName = name;
       cell.title = `:${name}:`;
       Object.assign(cell.style, {
-        background: 'none',
-        border: 'none',
-        cursor: 'pointer',
-        padding: '4px',
-        borderRadius: '4px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '34px',
-        height: '34px',
-        flexShrink: '0',
+        background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
+        borderRadius: '4px', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', width: '34px', height: '34px', flexShrink: '0',
       });
       cellObserver.observe(cell);
       grid.appendChild(cell);
     }
   }
 
-  renderGrid('');
-  search.addEventListener('input', () => renderGrid(search.value));
+  function filterGrid(filter) {
+    const lower = filter.toLowerCase();
+    let visible = 0;
+    for (const cell of grid.querySelectorAll('[data-emoji-name]')) {
+      const matches = !filter || cell.dataset.emojiName.includes(lower);
+      cell.style.display = matches ? 'flex' : 'none';
+      if (matches) visible++;
+    }
+    if (noResultsMsg) { noResultsMsg.remove(); noResultsMsg = null; }
+    if (visible === 0 && filter) {
+      noResultsMsg = document.createElement('p');
+      Object.assign(noResultsMsg.style, { gridColumn: '1 / -1', color: '#9aa0ac', fontSize: '13px', textAlign: 'center', margin: '16px 0' });
+      noResultsMsg.textContent = 'No matching emojis.';
+      grid.appendChild(noResultsMsg);
+    }
+  }
+
+  buildGrid();
+  search.addEventListener('input', () => filterGrid(search.value));
 
   picker.appendChild(search);
   picker.appendChild(grid);
