@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HogTTV — Privacy Policy</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 680px;
+      margin: 60px auto;
+      padding: 0 24px 80px;
+      color: #1a1a1a;
+      line-height: 1.7;
+    }
+    h1 { font-size: 1.6rem; margin-bottom: 4px; }
+    .meta { color: #666; font-size: 0.9rem; margin-bottom: 40px; }
+    h2 { font-size: 1.1rem; margin-top: 36px; }
+    p, li { font-size: 0.97rem; }
+    ul { padding-left: 1.4em; }
+    a { color: #0070f3; }
+  </style>
+</head>
+<body>
+  <h1>HogTTV Privacy Policy</h1>
+  <p class="meta">Last updated: May 19, 2025</p>
+
+  <p>HogTTV is a Chrome extension that displays your Slack workspace's custom emojis inside Google Meet chat. This policy explains what data the extension handles and how.</p>
+
+  <h2>What data we collect</h2>
+  <p>The extension stores the following data <strong>locally on your device</strong> using Chrome's built-in storage API:</p>
+  <ul>
+    <li><strong>Slack OAuth token</strong> — obtained when you connect your workspace. Used to fetch your custom emoji list from the Slack API. Never sent to any server other than Slack.</li>
+    <li><strong>Workspace name</strong> — displayed in the extension popup so you know which workspace is connected.</li>
+    <li><strong>Emoji cache</strong> — a local copy of your workspace's emoji names and image URLs, refreshed every 4 hours. Stored only on your device.</li>
+  </ul>
+  <p>We do not collect names, email addresses, message content, browsing history, or any other personal information.</p>
+
+  <h2>OAuth server</h2>
+  <p>Connecting to Slack requires exchanging an authorization code for a token, which cannot be done safely inside a browser extension (it would expose the client secret). To handle this, HogTTV uses a minimal server at <code>hogttv-server.vercel.app</code> as a stateless pass-through: it receives the authorization code from Slack, exchanges it for a token, and immediately redirects that token back to your extension. The server does not log, store, or transmit any user data.</p>
+
+  <h2>Third-party services</h2>
+  <p>The extension communicates with:</p>
+  <ul>
+    <li><strong>Slack API</strong> (<code>slack.com/api/emoji.list</code>) — to fetch your workspace's custom emojis.</li>
+    <li><strong>Slack OAuth</strong> (<code>slack.com/oauth/v2/authorize</code>) — to authenticate you.</li>
+    <li><strong>HogTTV OAuth server</strong> (<code>hogttv-server.vercel.app</code>) — solely to complete the OAuth code exchange described above.</li>
+  </ul>
+  <p>No data is sold or shared with any other third party.</p>
+
+  <h2>Data retention and deletion</h2>
+  <p>All data is stored locally on your device. You can delete it at any time by clicking <strong>Disconnect</strong> in the extension popup, which clears all stored tokens and cached emojis. Uninstalling the extension removes all local data automatically.</p>
+
+  <h2>Contact</h2>
+  <p>Questions? Open an issue at <a href="https://github.com/PostHog/HogTTV/issues">github.com/PostHog/HogTTV/issues</a>.</p>
+</body>
+</html>
