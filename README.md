@@ -32,6 +32,17 @@ Use your custom Slack emotes in Google Meet.
 - Or type `:emoji_name` in the chat input for inline autocomplete — press **Enter** or **Tab** to insert
 - Emoji list is cached for 4 hours; re-sync from the popup if needed
 
+## Self-hosting / contributing
+
+The extension uses a Slack OAuth app to fetch your workspace's custom emojis. If you want to run your own fork with a separate Slack app:
+
+1. Create a Slack app at [api.slack.com/apps](https://api.slack.com/apps) with the `emoji:read` scope
+2. Replace `CLIENT_ID` in `popup.js:1` with your app's Client ID
+3. Deploy `server/` to Vercel (or any host) and set the env vars from `server/.env.example`
+4. Update `SERVER_CALLBACK` in `popup.js:2` to point to your deployed server
+
+The Client ID in this repo belongs to the canonical HogTTV Slack app and is safe to keep for personal installs, but forks should use their own app.
+
 ## Notes
 
 - Google Meet's DOM changes frequently — if the button doesn't appear, reload the extension at `chrome://extensions`
