@@ -13,7 +13,7 @@ Use your custom Slack emotes in Google Meet.
 
 ## Install
 
-1. **[Download the latest zip](https://github.com/jina-yoon/HogTTV/archive/refs/heads/main.zip)**
+1. **[Download the latest zip](https://github.com/PostHog/HogTTV/archive/refs/heads/main.zip)**
 2. Unzip it
 3. Open `chrome://extensions` in Chrome
 4. Enable **Developer mode** (top-right toggle)
