@@ -43,6 +43,22 @@ The extension uses a Slack OAuth app to fetch your workspace's custom emojis. If
 
 The Client ID in this repo belongs to the canonical HogTTV Slack app and is safe to keep for personal installs, but forks should use their own app.
 
+## Privacy
+
+HogTTV stores the following data **locally on your device** using Chrome's built-in storage API:
+
+- **Slack OAuth token** — used to fetch your custom emoji list from the Slack API. Never sent anywhere other than Slack.
+- **Workspace name** — displayed in the popup so you know which workspace is connected.
+- **Emoji cache** — a local copy of emoji names and image URLs, refreshed every 4 hours.
+
+We do not collect names, email addresses, message content, browsing history, or any other personal information. No data is sold or shared with any third party.
+
+**OAuth server:** Completing the Slack OAuth flow requires a server-side code exchange (doing it in the extension would expose the client secret). HogTTV uses a minimal stateless server at `hogttv-server.vercel.app` solely for this — it receives the authorization code, exchanges it for a token, and immediately redirects the token back to your extension. It does not log or store anything.
+
+**Deletion:** Click **Disconnect** in the popup to clear all stored tokens and cached emojis. Uninstalling the extension removes all local data automatically.
+
+Questions? [Open an issue](https://github.com/PostHog/HogTTV/issues).
+
 ## Notes
 
 - Google Meet's DOM changes frequently — if the button doesn't appear, reload the extension at `chrome://extensions`
