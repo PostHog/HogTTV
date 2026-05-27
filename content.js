@@ -24,6 +24,18 @@ async function init() {
   watchForChatInput();
 }
 
+// Keep the in-memory emojiMap in sync with the popup-triggered sync (or any
+// other write to chrome.storage.local.emojiCache) so already-open Meet tabs
+// pick up newly synced emojis without a page reload.
+if (chrome.storage && chrome.storage.onChanged) {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local' || !changes.emojiCache) return;
+    const next = changes.emojiCache.newValue;
+    emojiMap = (next && next.emojis) || {};
+    maybeRenderEmojis();
+  });
+}
+
 // ── DOM observation ──────────────────────────────────────────────────────────
 
 function watchForChatInput() {
