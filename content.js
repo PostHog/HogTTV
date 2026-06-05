@@ -4,7 +4,7 @@
 const BTN_ID = 'slack-emoji-picker-btn';
 const PICKER_ID = 'slack-emoji-picker';
 const AUTOCOMPLETE_ID = 'slack-emoji-autocomplete';
-const AUTOCOMPLETE_MAX = 6;
+const AUTOCOMPLETE_BATCH = 50; // render this many rows at a time; more load on scroll
 
 // Google Meet changes its DOM frequently; try multiple selectors.
 const INPUT_SELECTORS = [
@@ -297,7 +297,7 @@ function handleAutocompleteInput(input) {
 
   const matches = Object.keys(emojiMap)
     .filter(name => name.startsWith(result.partial))
-    .slice(0, AUTOCOMPLETE_MAX);
+    .sort();
 
   if (matches.length === 0) { hideAutocomplete(); return; }
   showAutocomplete(input, result.partial, matches);
@@ -320,7 +320,12 @@ function handleAutocompleteKeydown(e, input) {
   if (e.key === 'ArrowDown') {
     e.preventDefault();
     e.stopPropagation();
-    setActiveItem(items, activeIdx < items.length - 1 ? activeIdx + 1 : 0);
+    if (activeIdx >= items.length - 1 && ac._loadMore && ac._loadMore()) {
+      // At the bottom of the rendered rows but more matches exist — reveal them.
+      setActiveItem(ac.querySelectorAll('[data-emoji-name]'), activeIdx + 1);
+    } else {
+      setActiveItem(items, activeIdx < items.length - 1 ? activeIdx + 1 : 0);
+    }
     return;
   }
   if (e.key === 'ArrowUp') {
@@ -342,6 +347,7 @@ function setActiveItem(items, idx) {
   items.forEach((el, i) => {
     el.dataset.active = i === idx ? '1' : '0';
     el.style.background = i === idx ? '#4a4f5b' : 'none';
+    if (i === idx) el.scrollIntoView({ block: 'nearest' });
   });
 }
 
@@ -361,13 +367,17 @@ function showAutocomplete(input, partial, matches) {
     boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
     zIndex: '2147483647',
     fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',
-    minWidth: '220px',
+    // Fixed width so the box never reflows as longer names load in later batches.
+    width: '280px',
+    boxSizing: 'border-box',
+    maxHeight: '300px',
+    overflowY: 'auto',
   });
 
-  matches.forEach((name, i) => {
+  const createItem = (name) => {
     const item = document.createElement('div');
     item.dataset.emojiName = name;
-    item.dataset.active = i === 0 ? '1' : '0';
+    item.dataset.active = '0';
     Object.assign(item.style, {
       display: 'flex',
       alignItems: 'center',
@@ -377,7 +387,7 @@ function showAutocomplete(input, partial, matches) {
       cursor: 'pointer',
       color: '#d1d2d3',
       fontSize: '13px',
-      background: i === 0 ? '#4a4f5b' : 'none',
+      background: 'none',
     });
 
     const img = document.createElement('img');
@@ -388,12 +398,43 @@ function showAutocomplete(input, partial, matches) {
 
     const label = document.createElement('span');
     label.textContent = `:${name}:`;
+    label.title = `:${name}:`; // full name on hover, since long names truncate
+    // Truncate overflow instead of widening the row (min-width:0 lets it shrink in flex).
+    Object.assign(label.style, {
+      flex: '1',
+      minWidth: '0',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+    });
 
     item.appendChild(img);
     item.appendChild(label);
-    item.addEventListener('mouseenter', () => setActiveItem(ac.querySelectorAll('[data-emoji-name]'), i));
+    item.addEventListener('mouseenter', () => {
+      const items = ac.querySelectorAll('[data-emoji-name]');
+      setActiveItem(items, Array.from(items).indexOf(item));
+    });
     item.addEventListener('mousedown', (e) => { e.preventDefault(); completeShortcode(input, name); });
-    ac.appendChild(item);
+    return item;
+  };
+
+  // Render in batches so a prefix matching hundreds of emojis (e.g. ":bufo")
+  // doesn't build the whole list up front. More rows append as the user
+  // scrolls — off-screen <img>s stay unfetched thanks to loading="lazy".
+  let rendered = 0;
+  const renderMore = () => {
+    if (rendered >= matches.length) return false;
+    const end = Math.min(rendered + AUTOCOMPLETE_BATCH, matches.length);
+    for (; rendered < end; rendered++) ac.appendChild(createItem(matches[rendered]));
+    return true;
+  };
+  ac._loadMore = renderMore;
+
+  renderMore();
+  setActiveItem(ac.querySelectorAll('[data-emoji-name]'), 0);
+
+  ac.addEventListener('scroll', () => {
+    if (ac.scrollTop + ac.clientHeight >= ac.scrollHeight - 40) renderMore();
   });
 
   document.body.appendChild(ac);
