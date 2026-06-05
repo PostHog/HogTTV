@@ -4,7 +4,14 @@
 const CACHE_KEY = 'emojiCache';
 const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
+const CLIENT_ID = '910200304849.11123754217221';
+const SERVER_CALLBACK = 'https://hogttv-server.vercel.app/api/oauth/callback';
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message.type === 'CONNECT_SLACK') {
+    connectSlack().then(sendResponse);
+    return true;
+  }
   if (message.type === 'FETCH_EMOJIS') {
     fetchAndCacheEmojis(message.token).then(sendResponse);
     return true;
@@ -14,6 +21,43 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 });
+
+// Runs the full OAuth round-trip and an immediate emoji sync in the service
+// worker, so it completes even when the popup is torn down by the OAuth window
+// taking focus.
+async function connectSlack() {
+  let resultUrl;
+  try {
+    // Pass the extension's redirect URL as state so the server knows where to
+    // send the token without needing the extension ID hardcoded server-side.
+    const redirectUrl = chrome.identity.getRedirectURL();
+    const authUrl = 'https://slack.com/oauth/v2/authorize'
+      + `?client_id=${CLIENT_ID}`
+      + `&user_scope=emoji:read`
+      + `&redirect_uri=${encodeURIComponent(SERVER_CALLBACK)}`
+      + `&state=${encodeURIComponent(redirectUrl)}`;
+
+    resultUrl = await chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true });
+  } catch {
+    return { success: false, cancelled: true };
+  }
+
+  const params = new URL(resultUrl).searchParams;
+  const error = params.get('error');
+  if (error) {
+    return { success: false, error };
+  }
+
+  const token = params.get('token');
+  const team = params.get('team') ?? '';
+  await chrome.storage.local.set({ slackToken: token, slackTeam: team });
+
+  const synced = await fetchAndCacheEmojis(token);
+  if (synced.success) {
+    return { success: true, team, count: synced.count };
+  }
+  return { success: false, team, error: synced.error };
+}
 
 async function fetchAndCacheEmojis(token) {
   try {

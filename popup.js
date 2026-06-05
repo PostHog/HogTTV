@@ -1,6 +1,3 @@
-const CLIENT_ID = '910200304849.11123754217221';
-const SERVER_CALLBACK = 'https://hogttv-server.vercel.app/api/oauth/callback';
-
 const connectBtn = document.getElementById('connectBtn');
 const syncBtn = document.getElementById('syncBtn');
 const disconnectBtn = document.getElementById('disconnectBtn');
@@ -36,36 +33,27 @@ connectBtn.addEventListener('click', async () => {
   connectBtn.textContent = 'Connecting…';
   clearStatus();
 
+  // The service worker owns the OAuth round-trip and the immediate emoji sync,
+  // so the flow completes even if this popup is torn down mid-connect.
   try {
-    // Pass the extension's redirect URL as state so the server knows where to
-    // send the token without needing the extension ID hardcoded server-side.
-    const redirectUrl = chrome.identity.getRedirectURL();
-    const authUrl = 'https://slack.com/oauth/v2/authorize'
-      + `?client_id=${CLIENT_ID}`
-      + `&user_scope=emoji:read`
-      + `&redirect_uri=${encodeURIComponent(SERVER_CALLBACK)}`
-      + `&state=${encodeURIComponent(redirectUrl)}`;
+    const res = await chrome.runtime.sendMessage({ type: 'CONNECT_SLACK' });
 
-    const resultUrl = await chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true });
-    const params = new URL(resultUrl).searchParams;
-    const error = params.get('error');
-
-    if (error) {
-      const msg = error === 'wrong_workspace'
+    if (res.cancelled) {
+      showStatus('Connection cancelled.', 'info');
+    } else if (!res.success && res.error && res.team === undefined) {
+      const msg = res.error === 'wrong_workspace'
         ? 'This workspace is not authorized.'
-        : `Slack error: ${error}`;
+        : `Slack error: ${res.error}`;
       showStatus(msg, 'error');
-      return;
+    } else {
+      showConnected(res.team);
+      if (res.success) {
+        cacheInfoEl.textContent = `${res.count} emojis · synced just now`;
+        showStatus(`Synced ${res.count} emojis.`, 'success');
+      } else {
+        showStatus(`Sync failed: ${res.error}`, 'error');
+      }
     }
-
-    const token = params.get('token');
-    const team = params.get('team') ?? '';
-    await chrome.storage.local.set({ slackToken: token, slackTeam: team });
-
-    showConnected(team);
-    await doSync(token);
-  } catch {
-    showStatus('Connection cancelled.', 'info');
   } finally {
     connectBtn.disabled = false;
     connectBtn.innerHTML = '<span class="slack-hash">#</span> Connect to Slack';
