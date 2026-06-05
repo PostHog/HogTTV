@@ -36,8 +36,17 @@ async function fetchAndCacheEmojis(token) {
         direct[name] = url;
       }
     }
-    // Resolve one level of aliases (Slack doesn't nest deeper).
-    for (const [name, target] of Object.entries(aliases)) {
+    // Resolve alias chains: Slack aliases can point at other aliases
+    // (alias -> alias -> ... -> direct URL), so follow each chain to its
+    // root rather than resolving a single hop. A single-pass, one-level
+    // resolve silently drops every alias whose target is itself an alias.
+    for (const name of Object.keys(aliases)) {
+      let target = aliases[name];
+      const seen = new Set([name]); // guard against cyclic aliases
+      while (target && !direct[target] && aliases[target] && !seen.has(target)) {
+        seen.add(target);
+        target = aliases[target];
+      }
       if (direct[target]) direct[name] = direct[target];
     }
 

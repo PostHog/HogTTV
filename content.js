@@ -4,7 +4,7 @@
 const BTN_ID = 'slack-emoji-picker-btn';
 const PICKER_ID = 'slack-emoji-picker';
 const AUTOCOMPLETE_ID = 'slack-emoji-autocomplete';
-const AUTOCOMPLETE_MAX = 6;
+const AUTOCOMPLETE_MAX = 50;
 
 // Google Meet changes its DOM frequently; try multiple selectors.
 const INPUT_SELECTORS = [
@@ -297,6 +297,7 @@ function handleAutocompleteInput(input) {
 
   const matches = Object.keys(emojiMap)
     .filter(name => name.startsWith(result.partial))
+    .sort()
     .slice(0, AUTOCOMPLETE_MAX);
 
   if (matches.length === 0) { hideAutocomplete(); return; }
@@ -342,6 +343,7 @@ function setActiveItem(items, idx) {
   items.forEach((el, i) => {
     el.dataset.active = i === idx ? '1' : '0';
     el.style.background = i === idx ? '#4a4f5b' : 'none';
+    if (i === idx) el.scrollIntoView({ block: 'nearest' });
   });
 }
 
@@ -362,6 +364,8 @@ function showAutocomplete(input, partial, matches) {
     zIndex: '2147483647',
     fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',
     minWidth: '220px',
+    maxHeight: '300px',
+    overflowY: 'auto',
   });
 
   matches.forEach((name, i) => {
