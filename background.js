@@ -50,14 +50,18 @@ async function connectSlack() {
     return { success: false, cancelled: true };
   }
 
-  const params = new URL(resultUrl).searchParams;
-  const error = params.get('error');
+  const url = new URL(resultUrl);
+  const error = url.searchParams.get('error');
   if (error) {
     return { success: false, error };
   }
 
-  const token = params.get('token');
-  const team = params.get('team') ?? '';
+  // The token comes back in the URL fragment (#token=...), not the query string,
+  // so it stays out of server/proxy logs and the Referer header. URL.hash includes
+  // the leading '#', so strip it before parsing.
+  const hashParams = new URLSearchParams(url.hash.slice(1));
+  const token = hashParams.get('token');
+  const team = hashParams.get('team') ?? '';
   await chrome.storage.local.set({ slackToken: token, slackTeam: team });
 
   const synced = await fetchAndCacheEmojis(token);
