@@ -37,9 +37,9 @@ Use your custom Slack emotes in Google Meet.
 The extension uses a Slack OAuth app to fetch your workspace's custom emojis. If you want to run your own fork with a separate Slack app:
 
 1. Create a Slack app at [api.slack.com/apps](https://api.slack.com/apps) with the `emoji:read` scope
-2. Replace `CLIENT_ID` in `popup.js:1` with your app's Client ID
+2. Replace `CLIENT_ID` in `background.js:7` with your app's Client ID
 3. Deploy `server/` to Vercel (or any host) and set the env vars from `server/.env.example`
-4. Update `SERVER_CALLBACK` in `popup.js:2` to point to your deployed server
+4. Update `SERVER_CALLBACK` in `background.js:8` to point to your deployed server
 
 The Client ID in this repo belongs to the canonical HogTTV Slack app and is safe to keep for personal installs, but forks should use their own app.
 
