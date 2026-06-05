@@ -367,7 +367,9 @@ function showAutocomplete(input, partial, matches) {
     boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
     zIndex: '2147483647',
     fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',
-    minWidth: '220px',
+    // Fixed width so the box never reflows as longer names load in later batches.
+    width: '280px',
+    boxSizing: 'border-box',
     maxHeight: '300px',
     overflowY: 'auto',
   });
@@ -396,6 +398,15 @@ function showAutocomplete(input, partial, matches) {
 
     const label = document.createElement('span');
     label.textContent = `:${name}:`;
+    label.title = `:${name}:`; // full name on hover, since long names truncate
+    // Truncate overflow instead of widening the row (min-width:0 lets it shrink in flex).
+    Object.assign(label.style, {
+      flex: '1',
+      minWidth: '0',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+    });
 
     item.appendChild(img);
     item.appendChild(label);
