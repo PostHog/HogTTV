@@ -7,6 +7,14 @@ const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 const CLIENT_ID = '910200304849.11123754217221';
 const SERVER_CALLBACK = 'https://hogttv-server.vercel.app/api/oauth/callback';
 
+// On fresh install, open the onboarding page in a new tab so users know to
+// connect to Slack without having to discover the toolbar popup first.
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === 'install') {
+    chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') });
+  }
+});
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'CONNECT_SLACK') {
     connectSlack().then(sendResponse);
