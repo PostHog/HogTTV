@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "HogTTV - Slack emojis in Google Meet",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Use your Slack workspace's custom emojis in Google Meet chat",
   "permissions": ["storage", "identity"],
   "host_permissions": [
