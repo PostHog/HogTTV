@@ -296,8 +296,13 @@ function handleAutocompleteInput(input) {
   if (!result) { hideAutocomplete(); return; }
 
   const matches = Object.keys(emojiMap)
-    .filter(name => name.startsWith(result.partial))
-    .sort();
+    .filter(name => name.includes(result.partial))
+    .sort((a, b) => {
+      // Prefix matches rank above mid-word matches, then alphabetical.
+      const ap = a.startsWith(result.partial), bp = b.startsWith(result.partial);
+      if (ap !== bp) return ap ? -1 : 1;
+      return a.localeCompare(b);
+    });
 
   if (matches.length === 0) { hideAutocomplete(); return; }
   showAutocomplete(input, result.partial, matches);
