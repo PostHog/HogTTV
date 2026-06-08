@@ -46,8 +46,12 @@ export default async function handler(req, res) {
   const token = data.authed_user?.access_token;
   const team = data.team?.name ?? '';
 
+  // Return the token in the URL fragment (#), not the query string: fragments are
+  // never sent to servers, proxies, the Referer header, or written to access logs,
+  // keeping this workspace-scoped token out of the leak surface. launchWebAuthFlow
+  // still captures the full redirect URL including the fragment.
   return res.redirect(
     302,
-    `${extensionRedirect}?token=${encodeURIComponent(token)}&team=${encodeURIComponent(team)}`,
+    `${extensionRedirect}#token=${encodeURIComponent(token)}&team=${encodeURIComponent(team)}`,
   );
 }

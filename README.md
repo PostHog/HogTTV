@@ -53,7 +53,7 @@ HogTTV stores the following data **locally on your device** using Chrome's built
 
 We do not collect names, email addresses, message content, browsing history, or any other personal information. No data is sold or shared with any third party.
 
-**OAuth server:** Completing the Slack OAuth flow requires a server-side code exchange (doing it in the extension would expose the client secret). HogTTV uses a minimal stateless server at `hogttv-server.vercel.app` solely for this — it receives the authorization code, exchanges it for a token, and immediately redirects the token back to your extension. It does not log or store anything.
+**OAuth server:** Completing the Slack OAuth flow requires a server-side code exchange (doing it in the extension would expose the client secret). HogTTV uses a minimal stateless server at `hogttv-server.vercel.app` solely for this — it receives the authorization code, exchanges it for a token, and immediately redirects the token back to your extension in the URL fragment (`#`) so it never reaches the server's request logs or the `Referer` header. It does not log or store anything.
 
 **Deletion:** Click **Disconnect** in the popup to clear all stored tokens and cached emojis. Uninstalling the extension removes all local data automatically.
 
