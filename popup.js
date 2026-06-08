@@ -7,15 +7,28 @@ const workspaceEl = document.getElementById('workspaceName');
 const connectedView = document.getElementById('connectedView');
 const disconnectedView = document.getElementById('disconnectedView');
 
+// ── Messaging ───────────────────────────────────────────────────────────────
+
+// MV3 service workers are evicted aggressively, so sendMessage can reject
+// ("Receiving end does not exist") or resolve to undefined mid-update. Always
+// hand back a well-formed object so callers can read properties without throwing.
+async function sendMessage(message) {
+  try {
+    return (await chrome.runtime.sendMessage(message)) || { error: 'No response from the background script.' };
+  } catch (err) {
+    return { error: err.message || 'Background script unreachable.' };
+  }
+}
+
 // ── Startup ───────────────────────────────────────────────────────────────────
 
 (async () => {
   const { slackToken, slackTeam } = await chrome.storage.local.get(['slackToken', 'slackTeam']);
   if (slackToken) {
     showConnected(slackTeam);
-    const res = await chrome.runtime.sendMessage({ type: 'GET_CACHED_EMOJIS' });
+    const res = await sendMessage({ type: 'GET_CACHED_EMOJIS' });
     if (res.fetchedAt) {
-      const count = Object.keys(res.emojis).length;
+      const count = Object.keys(res.emojis || {}).length;
       cacheInfoEl.textContent = `${count} emojis · synced ${formatAgo(res.fetchedAt)}`;
       if (res.stale) showStatus('Cache is over 4 hours old — resync to refresh.', 'info');
     } else {
@@ -36,7 +49,7 @@ connectBtn.addEventListener('click', async () => {
   // The service worker owns the OAuth round-trip and the immediate emoji sync,
   // so the flow completes even if this popup is torn down mid-connect.
   try {
-    const res = await chrome.runtime.sendMessage({ type: 'CONNECT_SLACK' });
+    const res = await sendMessage({ type: 'CONNECT_SLACK' });
 
     if (res.cancelled) {
       showStatus('Connection cancelled.', 'info');
@@ -72,7 +85,7 @@ async function doSync(token) {
   syncBtn.textContent = 'Syncing…';
   clearStatus();
 
-  const res = await chrome.runtime.sendMessage({ type: 'FETCH_EMOJIS', token });
+  const res = await sendMessage({ type: 'FETCH_EMOJIS', token });
 
   syncBtn.disabled = false;
   syncBtn.textContent = 'Sync emojis';

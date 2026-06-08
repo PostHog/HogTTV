@@ -59,4 +59,24 @@ check('surrounded text renders',     expand('a :thumbsup: b'),      'a [img] b')
 // Unknown emoji must pass through unchanged.
 check('unknown emoji unchanged',     expand(':unknown:'),            ':unknown:');
 
-process.exit(failed ? 1 : 0);
+// init() must not throw when the service worker fails to respond. Under MV3 the
+// worker can be evicted, so sendMessage may resolve to undefined or reject — in
+// either case init() must still wire up the UI with an empty map rather than
+// aborting (which would leave the picker button and rendering broken).
+async function checkInitSurvives(label, sendMessageStub) {
+  chrome.runtime.sendMessage = sendMessageStub;
+  sandbox.emojiMap = { stale: 'x' }; // prove init resets it to {}
+  try {
+    await sandbox.init();
+    const ok = JSON.stringify(sandbox.emojiMap) === '{}';
+    check(label, ok, true);
+  } catch (err) {
+    check(label, `threw: ${err.message}`, true);
+  }
+}
+
+(async () => {
+  await checkInitSurvives('init survives undefined response', () => Promise.resolve(undefined));
+  await checkInitSurvives('init survives rejected sendMessage', () => Promise.reject(new Error('no receiver')));
+  process.exit(failed ? 1 : 0);
+})();

@@ -18,8 +18,16 @@ const INPUT_SELECTORS = [
 var emojiMap = {};
 
 async function init() {
-  const res = await chrome.runtime.sendMessage({ type: 'GET_CACHED_EMOJIS' });
-  emojiMap = res.emojis || {};
+  let res;
+  try {
+    res = await chrome.runtime.sendMessage({ type: 'GET_CACHED_EMOJIS' });
+  } catch {
+    res = null; // service worker asleep / unreachable — degrade to empty map
+  }
+  // The response can also resolve to undefined if the worker never replied, so
+  // guard before reading .emojis. The storage.onChanged listener below repopulates
+  // emojiMap once a sync lands, so an empty first response self-heals.
+  emojiMap = (res && res.emojis) || {};
   maybeRenderEmojis();
   watchForChatInput();
 }
