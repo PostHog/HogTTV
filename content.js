@@ -38,12 +38,26 @@ if (chrome.storage && chrome.storage.onChanged) {
 
 // ── DOM observation ──────────────────────────────────────────────────────────
 
-function watchForChatInput() {
-  const observer = new MutationObserver(() => {
+// Coalesce observer work to at most once per frame. Google Meet mutates its DOM
+// constantly during a call; without this the handlers would fire hundreds of
+// times per second (and re-trigger on their own emoji-expansion output).
+let observerWorkScheduled = false;
+function scheduleObserverWork() {
+  if (observerWorkScheduled) return;
+  observerWorkScheduled = true;
+  const run = () => {
+    observerWorkScheduled = false;
     maybeInjectButton();
     maybeRenderEmojis();
-  });
-  observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+  else setTimeout(run, 16);
+}
+
+function watchForChatInput() {
+  const observer = new MutationObserver(scheduleObserverWork);
+  // Only childList/subtree — neither handler depends on attribute mutations.
+  observer.observe(document.body, { childList: true, subtree: true });
   // Run once immediately in case chat is already open.
   maybeInjectButton();
 }
