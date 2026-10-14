@@ -1,5 +1,5 @@
 {
-  "name": "hogtv",
+  "name": "hogttv",
   "private": true,
   "devDependencies": {
     "jsdom": "^25.0.0"
