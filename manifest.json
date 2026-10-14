@@ -3,6 +3,18 @@
   "name": "HogTTV - Slack emojis in Google Meet",
   "version": "1.1.1",
   "description": "Use your Slack workspace's custom emojis in Google Meet chat",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "hogttv@posthog.com",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": ["authenticationInfo"]
+      }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
+    }
+  },
   "permissions": ["storage"],
   "host_permissions": [
     "https://meet.google.com/*",
@@ -11,7 +23,8 @@
     "https://hogttv-server.vercel.app/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
   },
   "content_scripts": [
     {
