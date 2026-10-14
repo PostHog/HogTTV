@@ -3,3 +3,4 @@ node_modules/
 .hoggit/
 .DS_Store
 hoggit-aarch64-apple-darwin/
+web-ext-artifacts/
