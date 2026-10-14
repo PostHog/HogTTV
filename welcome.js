@@ -25,7 +25,7 @@ connectBtn.addEventListener('click', async () => {
   clearStatus();
 
   try {
-    const res = await chrome.runtime.sendMessage({ type: 'CONNECT_SLACK' });
+    const res = await connectSlack();
 
     if (res.cancelled) {
       showStatus('Connection cancelled.', 'info');

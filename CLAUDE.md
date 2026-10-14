@@ -10,6 +10,7 @@ One `manifest.json` serves both browsers.
 ```sh
 npm install        # first time only — installs jsdom
 node test/emoji.js # exit 0 = pass, non-zero = fail
+node test/oauth.js # OAuth flow survives a background restart
 ```
 
 ## Firefox compatibility

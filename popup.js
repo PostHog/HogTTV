@@ -33,10 +33,10 @@ connectBtn.addEventListener('click', async () => {
   connectBtn.textContent = 'Connecting…';
   clearStatus();
 
-  // The service worker owns the OAuth round-trip and the immediate emoji sync,
+  // The background owns the OAuth round-trip and the immediate emoji sync,
   // so the flow completes even if this popup is torn down mid-connect.
   try {
-    const res = await chrome.runtime.sendMessage({ type: 'CONNECT_SLACK' });
+    const res = await connectSlack();
 
     if (res.cancelled) {
       showStatus('Connection cancelled.', 'info');

@@ -65,7 +65,7 @@ npx web-ext lint    # must report 0 errors
 npx web-ext build   # writes web-ext-artifacts/hogttv_-_slack_emojis_in_google_meet-<version>.zip
 ```
 
-Upload the zip at [addons.mozilla.org/developers](https://addons.mozilla.org/developers/addon/submit/distribution), or submit it from the command line with an [AMO API key](https://addons.mozilla.org/developers/addon/api/key/):
+Submit the first version through [addons.mozilla.org/developers](https://addons.mozilla.org/developers/addon/submit/distribution): upload the zip and fill in the listing's summary, categories, and license there. Later versions can go from the command line with an [AMO API key](https://addons.mozilla.org/developers/addon/api/key/):
 
 ```sh
 npx web-ext sign --channel=listed --api-key=$AMO_JWT_ISSUER --api-secret=$AMO_JWT_SECRET
